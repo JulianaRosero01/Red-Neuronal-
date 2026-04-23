@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Red neuronal simple</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --line: #d9e1ee;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --soft: #e8f0ff;
+      --green: #dff7ed;
+      --gray: #eef2f7;
+      --shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .title {
+      background: linear-gradient(135deg, #0f172a, #1d4ed8);
+      color: white;
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 22px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8fbff;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-soft { background: var(--soft); color: var(--primary); }
+    .btn-green { background: var(--green); color: #0f766e; }
+    .btn-gray { background: var(--gray); color: #334155; }
+
+    .status {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #f8fbff;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status.error {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .stat span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      font-size: 24px;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .network-box {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #f8fbff;
+      padding: 10px;
+      min-height: 430px;
+      overflow: auto;
+    }
+
+    #networkSvg {
+      width: 100%;
+      min-height: 400px;
+      display: block;
+    }
+
+    .simple-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .result-box {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: #fbfdff;
+    }
+
+    .result-box h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 14px;
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .row span:first-child {
+      color: var(--muted);
+    }
+
+    .row span:last-child {
+      font-weight: 700;
+      text-align: right;
+    }
+
+    @media (max-width: 980px) {
+      .layout,
+      .simple-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app { padding: 14px; }
+      .stats { grid-template-columns: 1fr; }
+      .title h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="title">
+      <h1>Red neuronal simple</h1>
+    </section>
+
+    <section class="layout">
+      <aside class="card">
+        <h2>Datos</h2>
+
+        <div class="field">
+          <label for="architecture">Arquitectura (capas)</label>
+          <input id="architecture" placeholder="Ejemplo: 2,3,2,1" />
+        </div>
+
+        <div class="field">
+          <label for="inputVector">Vector de entrada</label>
+          <input id="inputVector" placeholder="Ejemplo: 0.45,0.81" />
+        </div>
+
+        <div class="field">
+          <label for="targetVector">Vector objetivo</label>
+          <input id="targetVector" placeholder="Ejemplo: 0.20" />
+        </div>
+
+        <div class="field">
+          <label for="learningRate">Tasa de aprendizaje</label>
+          <input id="learningRate" type="number" step="0.0001" placeholder="Ejemplo: 0.10" />
+        </div>
+
+        <div class="field">
+          <label for="epochs">Épocas</label>
+          <input id="epochs" type="number" min="1" step="1" placeholder="Ejemplo: 20" />
+        </div>
+
+        <div class="buttons">
+          <button id="buildBtn" class="btn-primary">Generar red</button>
+          <button id="trainBtn" class="btn-green" disabled>Entrenar modelo</button>
+          <button id="resetBtn" class="btn-gray">Reiniciar</button>
+        </div>
+
+        <div id="statusBox" class="status">Primero escribe los datos y genera la red.</div>
+      </aside>
+
+      <main>
+        <section class="stats">
+          <div class="stat">
+            <span>Estado</span>
+            <strong id="stateView">-</strong>
+          </div>
+          <div class="stat">
+            <span>Épocas ejecutadas</span>
+            <strong id="epochView">0</strong>
+          </div>
+          <div class="stat">
+            <span>Error final</span>
+            <strong id="errorView">-</strong>
+          </div>
+        </section>
+
+        <section class="simple-grid">
+          <div class="card result-box">
+            <h3>Antes de entrenar</h3>
+            <div class="row"><span>Salida inicial</span><span id="initialOutputView">-</span></div>
+            <div class="row"><span>Error inicial</span><span id="initialErrorView">-</span></div>
+          </div>
+
+          <div class="card result-box">
+            <h3>Después de entrenar</h3>
+            <div class="row"><span>Salida final</span><span id="finalOutputView">-</span></div>
+            <div class="row"><span>Error final</span><span id="finalErrorView">-</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Vista de la red</h2>
+          <div class="network-box">
+            <svg id="networkSvg" viewBox="0 0 1000 420"></svg>
+          </div>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      architecture: [],
+      weights: [],
+      activations: [],
+      input: [],
+      target: [],
+      learningRate: 0.1,
+      trainedEpochs: 0,
+      status: 'Sin iniciar',
+      initialOutput: null,
+      initialError: null,
+      finalOutput: null,
+      finalError: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const architectureInput = $('architecture');
+    const inputVectorInput = $('inputVector');
+    const targetVectorInput = $('targetVector');
+    const learningRateInput = $('learningRate');
+    const epochsInput = $('epochs');
+    const buildBtn = $('buildBtn');
+    const trainBtn = $('trainBtn');
+    const resetBtn = $('resetBtn');
+    const statusBox = $('statusBox');
+    const stateView = $('stateView');
+    const epochView = $('epochView');
+    const errorView = $('errorView');
+    const initialOutputView = $('initialOutputView');
+    const initialErrorView = $('initialErrorView');
+    const finalOutputView = $('finalOutputView');
+    const finalErrorView = $('finalErrorView');
+    const networkSvg = $('networkSvg');
+
+    function round(value, decimals = 6) {
+      return Number(value).toFixed(decimals);
+    }
+
+    function parseNumbers(text) {
+      return text
+        .split(',')
+        .map(v => Number(v.trim()))
+        .filter(v => !Number.isNaN(v));
+    }
+
+    function parseArchitecture(text) {
+      return text
+        .split(',')
+        .map(v => Number(v.trim()))
+        .filter(v => Number.isInteger(v) && v > 0);
+    }
+
+    function sigmoid(x) {
+      return 1 / (1 + Math.exp(-x));
+    }
+
+    function sigmoidDerivative(a) {
+      return a * (1 - a);
+    }
+
+    function matrixVectorMultiply(vector, matrix) {
+      const result = Array(matrix[0].length).fill(0);
+      for (let j = 0; j < matrix[0].length; j++) {
+        for (let i = 0; i < vector.length; i++) {
+          result[j] += vector[i] * matrix[i][j];
+        }
+      }
+      return result;
+    }
+
+    function transpose(matrix) {
+      return matrix[0].map((_, j) => matrix.map(row => row[j]));
+    }
+
+    function outerProduct(a, b) {
+      return a.map(av => b.map(bv => av * bv));
+    }
+
+    function mse(output, target) {
+      let total = 0;
+      for (let i = 0; i < output.length; i++) {
+        total += (target[i] - output[i]) ** 2;
+      }
+      return total / output.length;
+    }
+
+    function randomWeights(architecture) {
+      const weights = [];
+      for (let i = 0; i < architecture.length - 1; i++) {
+        const rows = architecture[i];
+        const cols = architecture[i + 1];
+        const matrix = Array.from({ length: rows }, () =>
+          Array.from({ length: cols }, () => Number((Math.random() * 2 - 1).toFixed(2)))
+        );
+        weights.push(matrix);
+      }
+      return weights;
+    }
+
+    function setStatus(message, isError = false) {
+      statusBox.textContent = message;
+      statusBox.className = isError ? 'status error' : 'status';
+    }
+
+    function updateSummary() {
+      stateView.textContent = state.status;
+      epochView.textContent = state.trainedEpochs;
+      errorView.textContent = state.finalError === null ? '-' : round(state.finalError, 6);
+      initialOutputView.textContent = state.initialOutput ? state.initialOutput.map(v => round(v, 4)).join(', ') : '-';
+      initialErrorView.textContent = state.initialError === null ? '-' : round(state.initialError, 6);
+      finalOutputView.textContent = state.finalOutput ? state.finalOutput.map(v => round(v, 4)).join(', ') : '-';
+      finalErrorView.textContent = state.finalError === null ? '-' : round(state.finalError, 6);
+    }
+
+    function renderNetwork() {
+      networkSvg.innerHTML = '';
+      if (!state.architecture.length) return;
+
+      const width = 1000;
+      const height = 420;
+      const left = 90;
+      const right = width - 90;
+      const top = 60;
+      const bottom = height - 60;
+      const layerGap = state.architecture.length === 1 ? 0 : (right - left) / (state.architecture.length - 1);
+      const nodes = [];
+
+      state.architecture.forEach((count, layerIndex) => {
+        const x = left + layerGap * layerIndex;
+        const yGap = (bottom - top) / (count + 1);
+        const layerNodes = [];
+
+        for (let i = 0; i < count; i++) {
+          const y = top + yGap * (i + 1);
+          layerNodes.push({
+            x,
+            y,
+            value: state.activations[layerIndex]?.[i] ?? 0
+          });
+        }
+        nodes.push(layerNodes);
+      });
+
+      for (let layer = 0; layer < nodes.length - 1; layer++) {
+        nodes[layer].forEach((fromNode, i) => {
+          nodes[layer + 1].forEach((toNode, j) => {
+            const weight = state.weights[layer]?.[i]?.[j] ?? 0;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromNode.x);
+            line.setAttribute('y1', fromNode.y);
+            line.setAttribute('x2', toNode.x);
+            line.setAttribute('y2', toNode.y);
+            line.setAttribute('stroke', weight >= 0 ? '#60a5fa' : '#f87171');
+            line.setAttribute('stroke-width', '2');
+            line.setAttribute('stroke-opacity', '0.7');
+            networkSvg.appendChild(line);
+          });
+        });
+      }
+
+      nodes.forEach((layerNodes, layerIndex) => {
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title.setAttribute('x', layerNodes[0].x);
+        title.setAttribute('y', 28);
+        title.setAttribute('text-anchor', 'middle');
+        title.setAttribute('font-size', '18');
+        title.setAttribute('font-weight', '700');
+        title.textContent = layerIndex === 0 ? 'Entrada' : (layerIndex === state.architecture.length - 1 ? 'Salida' : `Capa ${layerIndex}`);
+        networkSvg.appendChild(title);
+
+        layerNodes.forEach((node, index) => {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', node.x);
+          circle.setAttribute('cy', node.y);
+          circle.setAttribute('r', '28');
+          circle.setAttribute('fill', layerIndex === 0 ? '#f59e0b' : '#bfdbfe');
+          circle.setAttribute('stroke', '#1e293b');
+          circle.setAttribute('stroke-width', '1.5');
+          networkSvg.appendChild(circle);
+
+          const valueText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          valueText.setAttribute('x', node.x);
+          valueText.setAttribute('y', node.y + 4);
+          valueText.setAttribute('text-anchor', 'middle');
+          valueText.setAttribute('font-size', '11');
+          valueText.setAttribute('font-weight', '700');
+          valueText.textContent = round(node.value, 3);
+          networkSvg.appendChild(valueText);
+
+          const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          nameText.setAttribute('x', node.x);
+          nameText.setAttribute('y', node.y + 46);
+          nameText.setAttribute('text-anchor', 'middle');
+          nameText.setAttribute('font-size', '11');
+          nameText.setAttribute('fill', '#64748b');
+          nameText.textContent = `N${layerIndex + 1}.${index + 1}`;
+          networkSvg.appendChild(nameText);
+        });
+      });
+    }
+
+    function forwardPass() {
+      let current = [...state.input];
+      state.activations = [current];
+
+      for (let i = 0; i < state.weights.length; i++) {
+        const z = matrixVectorMultiply(current, state.weights[i]);
+        current = z.map(sigmoid);
+        state.activations.push(current);
+      }
+
+      const output = state.activations[state.activations.length - 1];
+      const error = mse(output, state.target);
+      return { output, error };
+    }
+
+    function trainEpoch() {
+      const result = forwardPass();
+      const deltas = Array(state.weights.length).fill(null);
+      const last = state.activations[state.activations.length - 1];
+      deltas[deltas.length - 1] = last.map((a, i) => 2 * (a - state.target[i]) * sigmoidDerivative(a));
+
+      for (let layer = state.weights.length - 2; layer >= 0; layer--) {
+        const propagated = matrixVectorMultiply(deltas[layer + 1], transpose(state.weights[layer + 1]));
+        const currentLayer = state.activations[layer + 1];
+        deltas[layer] = propagated.map((v, i) => v * sigmoidDerivative(currentLayer[i]));
+      }
+
+      for (let layer = 0; layer < state.weights.length; layer++) {
+        const gradient = outerProduct(state.activations[layer], deltas[layer]);
+        for (let i = 0; i < state.weights[layer].length; i++) {
+          for (let j = 0; j < state.weights[layer][i].length; j++) {
+            state.weights[layer][i][j] -= state.learningRate * gradient[i][j];
+          }
+        }
+      }
+    }
+
+    function buildNetwork() {
+      const architecture = parseArchitecture(architectureInput.value);
+      const input = parseNumbers(inputVectorInput.value);
+      const target = parseNumbers(targetVectorInput.value);
+      const learningRate = Number(learningRateInput.value);
+      const epochs = Number(epochsInput.value);
+
+      if (architecture.length < 2) {
+        setStatus('La arquitectura debe tener al menos dos capas.', true);
+        return;
+      }
+
+      if (input.length !== architecture[0]) {
+        setStatus('El vector de entrada no coincide con la primera capa.', true);
+        return;
+      }
+
+      if (target.length !== architecture[architecture.length - 1]) {
+        setStatus('El vector objetivo no coincide con la última capa.', true);
+        return;
+      }
+
+      if (!(learningRate > 0)) {
+        setStatus('La tasa de aprendizaje debe ser mayor que cero.', true);
+        return;
+      }
+
+      if (!(epochs >= 1)) {
+        setStatus('Las épocas deben ser mayores o iguales a 1.', true);
+        return;
+      }
+
+      state.architecture = architecture;
+      state.input = input;
+      state.target = target;
+      state.learningRate = learningRate;
+      state.weights = randomWeights(architecture);
+      state.trainedEpochs = 0;
+      state.status = 'Red generada';
+
+      const initial = forwardPass();
+      state.initialOutput = initial.output;
+      state.initialError = initial.error;
+      state.finalOutput = initial.output;
+      state.finalError = initial.error;
+
+      updateSummary();
+      renderNetwork();
+      setStatus('La red fue generada. Ahora puedes entrenar el modelo.');
+      trainBtn.disabled = false;
+    }
+
+    function trainModel() {
+      const epochs = Number(epochsInput.value);
+
+      if (!(epochs >= 1)) {
+        setStatus('Las épocas deben ser mayores o iguales a 1.', true);
+        return;
+      }
+
+      for (let i = 0; i < epochs; i++) {
+        trainEpoch();
+      }
+
+      state.trainedEpochs = epochs;
+      const final = forwardPass();
+      state.finalOutput = final.output;
+      state.finalError = final.error;
+      state.status = 'Modelo entrenado';
+
+      updateSummary();
+      renderNetwork();
+      setStatus('Entrenamiento completado. La forma de la red sigue igual; lo que cambia es la salida y el error.');
+    }
+
+    function resetApp() {
+      state.architecture = [];
+      state.weights = [];
+      state.activations = [];
+      state.input = [];
+      state.target = [];
+      state.learningRate = 0.1;
+      state.trainedEpochs = 0;
+      state.status = 'Sin iniciar';
+      state.initialOutput = null;
+      state.initialError = null;
+      state.finalOutput = null;
+      state.finalError = null;
+
+      architectureInput.value = '';
+      inputVectorInput.value = '';
+      targetVectorInput.value = '';
+      learningRateInput.value = '';
+      epochsInput.value = '';
+      networkSvg.innerHTML = '';
+      trainBtn.disabled = true;
+      updateSummary();
+      setStatus('La aplicación fue reiniciada.');
+    }
+
+    buildBtn.addEventListener('click', buildNetwork);
+    trainBtn.addEventListener('click', trainModel);
+    resetBtn.addEventListener('click', resetApp);
+  </script>
+</body>
+</html>
